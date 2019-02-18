@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".MainActivity">
+
+    <LinearLayout
+        android:id="@+id/linearLayout2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight=".1"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/ChordButton1"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_weight=".25"
+            android:onClick="chordClick" />
+
+        <Button
+            android:id="@+id/ChordButton2"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_weight=".25"
+            android:onClick="chordClick" />
+
+        <Button
+            android:id="@+id/ChordButton3"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_weight=".25"
+            android:onClick="chordClick" />
+
+        <Button
+            android:id="@+id/ChordButton4"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_weight=".25"
+            android:onClick="chordClick" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight=".1"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/ChordButton5"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_weight=".25"
+            android:onClick="chordClick" />
+
+        <Button
+            android:id="@+id/ChordButton6"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_weight=".25"
+            android:onClick="chordClick" />
+
+        <Button
+            android:id="@+id/ChordButton7"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_weight=".25"
+            android:onClick="chordClick" />
+
+        <Button
+            android:id="@+id/ChordButton8"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_weight=".25"
+            android:onClick="chordClick" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/ChordQualityTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_weight=".15"
+        android:textSize="18sp" />
+
+    <TextView
+        android:id="@+id/ChordNoteTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_weight=".15"
+        android:textSize="18sp" />
+
+    <Spinner
+        android:layout_gravity="center_horizontal"
+        android:id="@+id/KeySpinner"
+        android:layout_width="140dp"
+        android:layout_height="25dp"
+        android:layout_weight=".05"
+        android:entries="@array/keys" />
+
+    <CheckBox
+        android:id="@+id/MajorMinorCheckBox"
+        android:layout_gravity="center_horizontal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight=".05"
+        android:text="@string/minor_key" />
+
+    <Button
+        android:id="@+id/ConfirmationButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_weight=".05"
+        android:text="@string/create_key" />
+
+    <Button
+        android:id="@+id/ContinueButton"
+        android:layout_gravity="end"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight=".05"
+        android:text="Continue" />
+
+</LinearLayout>
