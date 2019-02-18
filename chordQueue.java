@@ -23,25 +23,31 @@ public class chordQueue {
         return endOfQueue;
     }
 
+    public boolean isFull(){
+        return endOfQueue > queue.length - 1;
+    }
+
     public int addChord(String[] chord){
         return addChord(chord, endOfQueue);
     }
 
     public int addChord(String[] chord, int pos){
-        if(endOfQueue > queue.length - 1) {
+        if(isFull()) {
             return 0;
         }
         else {
             for (int c = 0; c < queue[0].length; c++) {
                 queue[pos][c] = chord[c];
             }
-            endOfQueue++;
+            if(pos > endOfQueue) {
+                endOfQueue = pos;
+            }
             return 1;
         }
     }
 
     public String[] getChord(int pos){
-        String[] chord = new String[queue[0].length];
+        String[] chord = new String[queue[pos].length];
         for(int c = 0; c < chord.length; c++){
             chord[c] = queue[pos][c];
         }

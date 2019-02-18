@@ -19,6 +19,7 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -31,13 +32,14 @@ public class MainActivity extends AppCompatActivity {
     private TextView chordQualityTextView;
     private TextView triadNotesTextView;
     private Button[] chordButtons = new Button[8];
-    private String key;
+    private String key = "";
     private boolean loaded;
     private SoundPool soundPool;
     private Map<String, Integer> Sounds = new HashMap<>();
     private static String[] sharpNotes = new String[] {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
     private static String[] flatNotes = new String[] {"C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"};
-    private String[] notes = new String[8];
+    private static String[][] NOTES = new String[2][24];
+    private String[] notes = new String[14];
     private String[] triad = new String[3];
     private boolean isMinor;
     ArrayAdapter<CharSequence> adapter;
@@ -47,13 +49,14 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         initializeUI();
+        initializeNotes();
         adapter = ArrayAdapter.createFromResource(this, R.array.keys, R.layout.support_simple_spinner_dropdown_item);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         KeySpinner.setAdapter(adapter);
         KeySpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                key = parent.getItemAtPosition(position).toString();
+                key = parent.getItemAtPosition(position).toString() + "4";
             }
 
             @Override
@@ -69,7 +72,7 @@ public class MainActivity extends AppCompatActivity {
                     isMinor = minorCheck.isChecked();
                     setNotes();
                     for (int i = 0; i < chordButtons.length; i++) {
-                        (chordButtons[i]).setText(notes[i]);
+                        (chordButtons[i]).setText(getSimplifiedNote(notes[i]));
                     }
                 }
 
@@ -84,11 +87,29 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    public String getSimplifiedNote(String noteWithPos) {
+        return noteWithPos.substring(0, noteWithPos.length() - 1);
+    }
+
+    public String getUnsimplifiedNote(String noteWithoutPos){
+        for(int i = 0; i < notes.length; i++){
+            if(getSimplifiedNote(notes[i]).equals(noteWithoutPos))
+                return notes[i];
+        }
+        return null;
+    }
+
+    //pre: make sure that there is some type of key that is generated
     public void openNextActivity(){
-        Intent intent = new Intent(this, chordprogressionbuilder2.class);
-        intent.putExtra("key", key);
-        intent.putExtra("notes", notes);
-        startActivity(intent);
+        if(chordButtons[0].getText().equals("")){
+            Toast.makeText(this, "Pick a key before you begin building your progression!", Toast.LENGTH_LONG).show();
+        }
+        else {
+            Intent intent = new Intent(this, chordprogressionbuilder2.class);
+            intent.putExtra("key", key);
+            intent.putExtra("notes", notes);
+            startActivity(intent);
+        }
     }
 
     //This method finds the ID of the button that was pressed and passes it to the method that plays the chord
@@ -106,7 +127,7 @@ public class MainActivity extends AppCompatActivity {
     //This method plays the triad of the button that was touched
     public void playChord(Button rootButton) {
         String rootNote = (String)rootButton.getText();
-        makeTriad(rootNote);
+        makeTriad(getUnsimplifiedNote(rootNote));
         for(int i = 0; i < triad.length; i++) {
             AudioManager audioManager = (AudioManager)getSystemService(Context.AUDIO_SERVICE);
             float curVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
@@ -138,18 +159,19 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void displayNotes(Button chord) {
-        makeTriad((String)chord.getText());
+        makeTriad(getUnsimplifiedNote((String)chord.getText()));
         triadNotesTextView.setText("");
         for(int i = 0; i < triad.length-1; i++){
-            triadNotesTextView.append(triad[i] + "-");
+            triadNotesTextView.append(getSimplifiedNote(triad[i]) + "-");
         }
-        triadNotesTextView.append(triad[2]);
+        triadNotesTextView.append(getSimplifiedNote(triad[triad.length-1]));
 
     }
 
     public void displayChordQuality(Button chord) {
         String rootNote = (String)chord.getText();
         chordQualityTextView.setText(rootNote + " ");
+        rootNote = getUnsimplifiedNote(rootNote);
         if(!isMinor){
             if(rootNote.equals(notes[1]) || rootNote.equals(notes[2]) || rootNote.equals(notes[5])){
                 chordQualityTextView.append("Minor Chord");
@@ -204,52 +226,80 @@ public class MainActivity extends AppCompatActivity {
             public void onLoadComplete(SoundPool soundPool, int sampleId,
                                        int status) {
                 loaded = true;
-                Toast.makeText(getBaseContext(), "loaded", Toast.LENGTH_LONG).show();
             }
         });
     }
 
+    public void initializeNotes(){
+        for(int c = 0; c < sharpNotes.length; c++){
+            NOTES[0][c] = sharpNotes[c] + "4";
+            NOTES[1][c] = flatNotes[c] + "4";
+            NOTES[0][c + sharpNotes.length] = sharpNotes[c] + "5";
+            NOTES[1][c + sharpNotes.length] = flatNotes[c] + "5";
+        }
+    }
+
     //This method creates all of the sound notes from local files
     public void createSounds() {
-        Sounds.put("A", soundPool.load(this, R.raw.piano_a, 1));
-        Sounds.put("A#", soundPool.load(this, R.raw.piano_as, 1));
-        Sounds.put("Ab", soundPool.load(this, R.raw.piano_ab, 1));
-        Sounds.put("B", soundPool.load(this, R.raw.piano_b, 1));
-        Sounds.put("Bb", soundPool.load(this, R.raw.piano_bb, 1));
-        Sounds.put("C", soundPool.load(this, R.raw.piano_c, 1));
-        Sounds.put("C#", soundPool.load(this, R.raw.piano_cs, 1));
-        Sounds.put("D", soundPool.load(this, R.raw.piano_d, 1));
-        Sounds.put("Db", soundPool.load(this, R.raw.piano_db, 1));
-        Sounds.put("D#", soundPool.load(this, R.raw.piano_ds, 1));
-        Sounds.put("E", soundPool.load(this, R.raw.piano_e, 1));
-        Sounds.put("Eb", soundPool.load(this, R.raw.piano_eb, 1));
-        Sounds.put("F", soundPool.load(this, R.raw.piano_f, 1));
-        Sounds.put("F#", soundPool.load(this, R.raw.piano_fs, 1));
-        Sounds.put("G", soundPool.load(this, R.raw.piano_g, 1));
-        Sounds.put("Gb", soundPool.load(this, R.raw.piano_gb, 1));
-        Sounds.put("G#", soundPool.load(this, R.raw.piano_gs, 1));
+        Sounds.put("A4", soundPool.load(this, R.raw.piano_a4, 1));
+        Sounds.put("A#4", soundPool.load(this, R.raw.piano_as4, 1));
+        Sounds.put("Ab4", soundPool.load(this, R.raw.piano_ab4, 1));
+        Sounds.put("B4", soundPool.load(this, R.raw.piano_b4, 1));
+        Sounds.put("Bb4", soundPool.load(this, R.raw.piano_bb4, 1));
+        Sounds.put("C4", soundPool.load(this, R.raw.piano_c4, 1));
+        Sounds.put("C#4", soundPool.load(this, R.raw.piano_cs4, 1));
+        Sounds.put("D4", soundPool.load(this, R.raw.piano_d4, 1));
+        Sounds.put("Db4", soundPool.load(this, R.raw.piano_db4, 1));
+        Sounds.put("D#4", soundPool.load(this, R.raw.piano_ds4, 1));
+        Sounds.put("E4", soundPool.load(this, R.raw.piano_e4, 1));
+        Sounds.put("Eb4", soundPool.load(this, R.raw.piano_eb4, 1));
+        Sounds.put("F4", soundPool.load(this, R.raw.piano_f4, 1));
+        Sounds.put("F#4", soundPool.load(this, R.raw.piano_fs4, 1));
+        Sounds.put("G4", soundPool.load(this, R.raw.piano_g4, 1));
+        Sounds.put("Gb4", soundPool.load(this, R.raw.piano_gb4, 1));
+        Sounds.put("G#4", soundPool.load(this, R.raw.piano_gs4, 1));
 
+        Sounds.put("A5", soundPool.load(this, R.raw.piano_a5, 1));
+        Sounds.put("A#5", soundPool.load(this, R.raw.piano_as5, 1));
+        Sounds.put("Ab5", soundPool.load(this, R.raw.piano_ab5, 1));
+        Sounds.put("B5", soundPool.load(this, R.raw.piano_b5, 1));
+        Sounds.put("Bb5", soundPool.load(this, R.raw.piano_bb5, 1));
+        Sounds.put("C5", soundPool.load(this, R.raw.piano_c5, 1));
+        Sounds.put("C#5", soundPool.load(this, R.raw.piano_cs5, 1));
+        Sounds.put("D5", soundPool.load(this, R.raw.piano_d5, 1));
+        Sounds.put("Db5", soundPool.load(this, R.raw.piano_db5, 1));
+        Sounds.put("D#5", soundPool.load(this, R.raw.piano_ds5, 1));
+        Sounds.put("E5", soundPool.load(this, R.raw.piano_e5, 1));
+        Sounds.put("Eb5", soundPool.load(this, R.raw.piano_eb5, 1));
+        Sounds.put("F5", soundPool.load(this, R.raw.piano_f5, 1));
+        Sounds.put("F#5", soundPool.load(this, R.raw.piano_fs5, 1));
+        Sounds.put("G5", soundPool.load(this, R.raw.piano_g5, 1));
+        Sounds.put("Gb5", soundPool.load(this, R.raw.piano_gb5, 1));
+        Sounds.put("G#5", soundPool.load(this, R.raw.piano_gs5, 1));
     }
 
     //This method takes the key given and updates the eight buttons to display the correct chords in the key
     public void setNotes(){
-        if((key.length() == 1 && key.charAt(0) != 'F') || (key.length() > 1 && key.charAt(1) == '#')) {
+        if((key.length() == 2 && key.charAt(0) != 'F') || (key.length() > 2 && key.charAt(1) == '#')) {
             //The key is using sharp notes
-            sharpKey();
+            makeKey(0);
         }
         else {
             //Otherwise the key is using flat notes
-            flatKey();
+            makeKey(1);
         }
     }
 
-    public void sharpKey(){
+    //Given whether its a sharp or flat scale, this creates an array of the 8 notes in the key given by the user
+    public void makeKey(int rowNum){
         int index = 0;
-        //This loop finds the starting index of the sharp-notes, to base the intervals off of for the key
-        for(int i = 0; i < sharpNotes.length; i++) {
-            if(key.equals(sharpNotes[i])) {
-                notes[0] = sharpNotes[i];
-                index = i;
+        notes[0] = null;
+        while(notes[0] == null){
+            if(key.equals(NOTES[rowNum][index])) {
+                notes[0] = NOTES[rowNum][index];
+            }
+            else{
+                index++;
             }
         }
         if(!isMinor) {
@@ -258,9 +308,7 @@ public class MainActivity extends AppCompatActivity {
                     index++;
                 else
                     index = index + 2;
-                if(index >= sharpNotes.length)
-                    index = index - sharpNotes.length;
-                notes[a] = sharpNotes[index];
+                notes[a] = NOTES[rowNum][index];
             }
         }
         else {
@@ -269,44 +317,12 @@ public class MainActivity extends AppCompatActivity {
                     index++;
                 else
                     index = index + 2;
-                if(index >= sharpNotes.length)
-                    index = index - sharpNotes.length;
-                notes[a] = sharpNotes[index];
+                notes[a] = NOTES[rowNum][index];
             }
         }
-    }
 
-    //This method creates the key for a scale that uses flats as accidentals
-    private void flatKey() {
-        int index = 0;
-        //This loop finds the starting index of the flatnotes, to base the intervals off of for the key
-        for(int i = 0; i < flatNotes.length; i++) {
-            if(key.equals(flatNotes[i])) {
-                notes[0] = flatNotes[i];
-                index = i;
-            }
-        }
-        if(!isMinor) {
-            for(int a = 1; a < 8; a++) {
-                if(a == 3 || a == 7)
-                    index++;
-                else
-                    index = index + 2;
-                if(index >= flatNotes.length)
-                    index = index - flatNotes.length;
-                notes[a] = flatNotes[index];
-            }
-        }
-        else {
-            for(int a = 1; a < 8; a++) {
-                if(a == 2 || a == 5)
-                    index++;
-                else
-                    index = index + 2;
-                if(index >= flatNotes.length)
-                    index = index - flatNotes.length;
-                notes[a] = flatNotes[index];
-            }
+        for(int x = 8; x < notes.length; x++){
+            notes[x] = notes[x - 7].substring(0,notes[x-7].length()-1) + "5";
         }
     }
 
