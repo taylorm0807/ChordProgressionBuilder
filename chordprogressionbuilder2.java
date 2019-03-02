@@ -23,6 +23,7 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
@@ -50,7 +51,8 @@ public class chordprogressionbuilder2 extends AppCompatActivity {
     private boolean pause;
     private int delay;
     private ImageButton loopButton;
-    private Drawable loopImage;
+    private ImageButton pauseButton;
+    private boolean loaded = false;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -63,13 +65,23 @@ public class chordprogressionbuilder2 extends AppCompatActivity {
         r = new Runnable() {
             @Override
             public void run() {
+                stopSounds();
                 playChord();
             }
         };
+
         initializeUI();
+        //This sets all of the buttons text to the simplified version of each note to each note in the key
         for (int i = 0; i < chordButtons.length; i++) {
             (chordButtons[i]).setText(getSimplifiedNote(notes[i]));
         }
+        soundPool.setOnLoadCompleteListener(new SoundPool.OnLoadCompleteListener() {
+            @Override
+            public void onLoadComplete(SoundPool soundPool, int sampleId,
+                                       int status) {
+                loaded = true;
+            }
+        });
         returnButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -78,12 +90,16 @@ public class chordprogressionbuilder2 extends AppCompatActivity {
         });
     }
 
+    //This is called when the return button is called, and opens the first screen where you pick a key
     public void changeActivity(){
         Intent intent = new Intent(this, MainActivity.class);
+        soundPool.release();
         startActivity(intent);
     }
 
+    //This just initializes all the UI and sets them to variables to manipulate them later
     public void initializeUI(){
+        //Connects all the chord buttons
         chordButtons[0] = findViewById(R.id.ChordButton1);
         chordButtons[1] = findViewById(R.id.ChordButton2);
         chordButtons[2] = findViewById(R.id.ChordButton3);
@@ -92,6 +108,7 @@ public class chordprogressionbuilder2 extends AppCompatActivity {
         chordButtons[5] = findViewById(R.id.ChordButton6);
         chordButtons[6] = findViewById(R.id.ChordButton7);
         chordButtons[7] = findViewById(R.id.ChordButton8);
+        //Connects the 8 buttons used to play the progression
         progressionButtons[0] = findViewById(R.id.ProgressionButton1);
         progressionButtons[1] = findViewById(R.id.ProgressionButton2);
         progressionButtons[2] = findViewById(R.id.ProgressionButton3);
@@ -102,16 +119,18 @@ public class chordprogressionbuilder2 extends AppCompatActivity {
         progressionButtons[7] = findViewById(R.id.ProgressionButton8);
         BPMText = findViewById(R.id.BPMText);
         loopButton = findViewById(R.id.LoopButton);
-        loopImage = loopButton.getDrawable();
+        pauseButton = findViewById(R.id.imageButton2);
+        //Initializes the sound pool
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             AudioAttributes audioAttributes = new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_GAME).setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build();
-            soundPool = new SoundPool.Builder().setMaxStreams(17).setAudioAttributes(audioAttributes).build();
+            soundPool = new SoundPool.Builder().setMaxStreams(6).setAudioAttributes(audioAttributes).build();
         } else {
-            soundPool = new SoundPool(17, AudioManager.STREAM_MUSIC, 0);
+            soundPool = new SoundPool(6, AudioManager.STREAM_MUSIC, 0);
         }
         createSounds();
     }
 
+    //This fills the sound pool with all of the local files to play all of the notes needed
     public void createSounds(){
         Sounds.put("A4", soundPool.load(this, R.raw.piano_a4, 1));
         Sounds.put("A#4", soundPool.load(this, R.raw.piano_as4, 1));
@@ -150,20 +169,45 @@ public class chordprogressionbuilder2 extends AppCompatActivity {
         Sounds.put("G#5", soundPool.load(this, R.raw.piano_gs5, 1));
     }
 
+    //Called when a chord button is clicked, it calls addChord, and updates the button to have an outline, showing it was
+    //selected
     public void chordClick(View v){
         for(int i = 0; i < 8; i++){
-            if(chordButtons[i].getId() == v.getId())
+            if(chordButtons[i].getId() == v.getId()) {
                 addChord(chordButtons[i]);
+                for (int a = 0; a < 8; a++) {
+                    if(chordButtons[a].equals(chordButtons[i]))
+                        chordButtons[a].setBackground(getResources().getDrawable(R.drawable.selected_button));
+                    else
+                        chordButtons[a].setBackground(getResources().getDrawable(R.drawable.my_button_bg));
+                }
+            }
         }
     }
 
+    //Called when the loop button is pressed, updates the outline around it to show if active or not
     public void changeLoop(View v){
         looped = !looped;
+        if(looped)
+            loopButton.setBackground(getResources().getDrawable(R.drawable.selected_button));
+        else
+            loopButton.setBackground(getResources().getDrawable(R.drawable.my_button_bg));
     }
 
+    //When the pause button is pressed, changes background to show it was selected, then goes away after 1/2 a second
     public void pauseProgression(View v){
         pause = true;
+        pauseButton.setBackground(getResources().getDrawable(R.drawable.selected_button));
         looped = false;
+        loopButton.setBackground(getResources().getDrawable(R.drawable.my_button_bg));
+        Handler wait = new Handler();
+        Runnable delay = new Runnable() {
+            @Override
+            public void run() {
+                pauseButton.setBackground(getResources().getDrawable(R.drawable.my_button_bg));
+            }
+        };
+        wait.postDelayed(delay, 500);
     }
 
     //If one of the buttons in the workspace is clicked, check to see if a chord is selected. If it is
@@ -172,7 +216,7 @@ public class chordprogressionbuilder2 extends AppCompatActivity {
     public void progressionClick(View v){
         for(int i = 0; i < 8; i++){
             if(progressionButtons[i].getId() == v.getId()){
-                if(chordSelected == false) {
+                if(!chordSelected) {
                     queue.removeChord(i);
                     progressionButtons[i].setText("");
                 }
@@ -180,6 +224,10 @@ public class chordprogressionbuilder2 extends AppCompatActivity {
                     queue.addChord(triad, i);
                     progressionButtons[i].setText(getSimplifiedNote(triad[0]));
                     chordSelected = false;
+                    //Once added, all the chord buttons go back to no outline since nothing is selected
+                    for(int a = 0; a < 8; a++){
+                        chordButtons[a].setBackground(getResources().getDrawable(R.drawable.my_button_bg));
+                    }
                 }
             }
         }
@@ -194,9 +242,11 @@ public class chordprogressionbuilder2 extends AppCompatActivity {
         chordSelected = true;
     }
 
+    //This method takes the rootNote of the button and creates a 3 note triad based on the key that the user created in the first
+    //activity
     public void makeTriad(String rootNote) {
         int startIndex = 0;
-        for(int i = 0; i < notes.length; i++){
+        for(int i = 0; i < notes.length/2; i++){
             if(notes[i].equals(rootNote))
                 startIndex = i;
         }
@@ -208,6 +258,7 @@ public class chordprogressionbuilder2 extends AppCompatActivity {
         }
     }
 
+    //Accesor method to get the current BPM
     public int getBPM(){
         if(BPMText.getText().toString().equals(""))
             return 60;
@@ -215,31 +266,58 @@ public class chordprogressionbuilder2 extends AppCompatActivity {
             return Integer.parseInt(BPMText.getText().toString());
     }
 
+    //When the playButton is pressed, this method is called, and takes the current BPM and creates the delay between each chord
     public void playButton(View v){
-        //Toast.makeText(this, getBPM() + "", Toast.LENGTH_LONG).show();
+        index = 0;
         pause = false;
+        stopSounds();
         int BPM = getBPM();
         delay = (int)((60.0/BPM) *(1000));
-        //1000;//(60)
-        playChord();
-        for (int i = 0; i < queue.getSize(); i++) {
-            myHandler.postDelayed(r, delay * (i + 1));
+        //Toast.makeText(this, "Currently playing " + queue.toString(), Toast.LENGTH_SHORT).show();
+        //checks to make sure all of the sounds are loaded before trying to play the progression
+        if(loaded) {
+            playChord();
+            //Calls each chord that is currently in the queue, sepereated by a time of delay, based on the BPM entered
+            for (int i = 0; i < queue.getSize(); i++) {
+                myHandler.postDelayed(r, delay * (i + 1));
+            }
+        }
+        else{
+            Toast.makeText(this, "The sounds need to finish loading in, try again in a few seconds.", Toast.LENGTH_LONG).show();
         }
     }
 
+    //This is the method that plays the progression of chords that the user has added to the workspace
     public void playChord() {
+        //This logic deals with the background of the buttons and making sure that the button is only selected if
+        //it is currently playing, so the previous button is set back to normal
+        if(index == 0){
+            for(int i = 0; i < progressionButtons.length; i++) {
+                progressionButtons[i].setBackground(getResources().getDrawable(R.drawable.progression_background));
+            }
+        }
+        else {
+            progressionButtons[index - 1].setBackground(getResources().getDrawable(R.drawable.progression_background));
+        }
+        //The current playing button is given an outline to show what chord is playing
+        progressionButtons[index].setBackground(getResources().getDrawable(R.drawable.currently_playing_button));
         tempTriad = queue.getChord(index);
-        if(tempTriad[0] == " "){
+        if(tempTriad[0].equals(" ")){
             //There is a rest
         }
-        else if(!pause){
-            for (int a = 0; a < tempTriad.length; a++) {
-                soundIDsPlaying[a] = soundPool.play(Sounds.get(tempTriad[a]), 1, 1, 1, 0, 1);
+        else{
+            //If the progression isn't paused, it goes through the triad created for the chord and plays each note together
+            if(!pause) {
+                for (int a = 0; a < tempTriad.length; a++) {
+                    soundIDsPlaying[a] = soundPool.play(Sounds.get(tempTriad[a]), 1, 1, 1, 0, 1);
+                }
             }
         }
         index++;
+        //If the index is at the max number of chords, either stops or resets depending on the loop button
         if(index == (queue.getSize() + 1)) {
             index = 0;
+            //If the loop button is pressed, then the playButton method is called again, which plays the whole progression again
             if(looped){
                 Handler repeat = new Handler();
                 Runnable r2 = new Runnable() {
@@ -254,15 +332,32 @@ public class chordprogressionbuilder2 extends AppCompatActivity {
         }
     }
 
+    //This method stops all of the sounds going on, to prevent chords from bleeding over each other
+    public void stopSounds(){
+        for(int i  = 0 ; i < soundIDsPlaying.length; i++){
+            soundPool.stop(soundIDsPlaying[i]);
+        }
+    }
+
+    //This helper method takes a note like C4 and returns C, to make it more user-friendly
     public String getSimplifiedNote(String noteWithPos) {
         return noteWithPos.substring(0, noteWithPos.length() - 1);
     }
 
+    //This helper method takes a user-friendly note like C and unsimplifies it to C4 or C5 depending on the key to allow
+    //for the correct note to be played and used in other methods
     public String getUnsimplifiedNote(String noteWithoutPos){
         for(int i = 0; i < notes.length; i++){
             if(getSimplifiedNote(notes[i]).equals(noteWithoutPos))
                 return notes[i];
         }
         return null;
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        soundPool.release();
+        soundPool = null;
     }
 }

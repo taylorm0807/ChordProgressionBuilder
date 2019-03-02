@@ -54,16 +54,19 @@ public class chordQueue {
         return chord;
     }
 
-    public void removeChord(){
-        removeChord(endOfQueue);
+    public void removeChord(int pos){
+        for(int c = 0; c < queue[0].length; c++){
+            queue[pos][c] = " ";
+        }
+        endOfQueue = reSize();
     }
 
-    public void removeChord(int pos){
-        for(int r = pos; r < queue.length - 1; r++){
-            for(int c = 0; c < queue[0].length; c++)
-            queue[r][c] = queue[r+1][c];
+    public int reSize(){
+        for(int r = queue.length - 1; r >= 0; r--){
+            if(!(queue[r][0].equals(" ")))
+                return r;
         }
-        endOfQueue--;
+        return 0;
     }
 
     public String toString(){

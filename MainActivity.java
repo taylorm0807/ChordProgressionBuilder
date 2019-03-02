@@ -53,6 +53,14 @@ public class MainActivity extends AppCompatActivity {
         adapter = ArrayAdapter.createFromResource(this, R.array.keys, R.layout.support_simple_spinner_dropdown_item);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         KeySpinner.setAdapter(adapter);
+        if(getIntent().getExtras() != null){
+            Bundle data = getIntent().getExtras();
+            key = data.getString("key");
+            notes = data.getStringArray("notes");
+            for (int i = 0; i < chordButtons.length; i++) {
+                (chordButtons[i]).setText(getSimplifiedNote(notes[i]));
+            }
+        }
         KeySpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
@@ -66,8 +74,11 @@ public class MainActivity extends AppCompatActivity {
 
         });
 
+        //The confirmation button method when clicked calls this method
         confirmationButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
+                //If the key isn't blank, then the notes are created and the chord buttons are updated with the text of each
+                //note in the key
                 if(key != null) {
                     isMinor = minorCheck.isChecked();
                     setNotes();
@@ -78,7 +89,7 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
-
+        //sets the onclick for the confirmation button, opening the next activity
         continueButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -87,10 +98,13 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    //This helper method takes a note like C4 and returns C, to make it more user-friendly
     public String getSimplifiedNote(String noteWithPos) {
         return noteWithPos.substring(0, noteWithPos.length() - 1);
     }
 
+    //This helper method takes a user-friendly note like C and unsimplifies it to C4 or C5 depending on the key to allow
+    //for the correct note to be played and used in other methods
     public String getUnsimplifiedNote(String noteWithoutPos){
         for(int i = 0; i < notes.length; i++){
             if(getSimplifiedNote(notes[i]).equals(noteWithoutPos))
@@ -105,9 +119,11 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "Pick a key before you begin building your progression!", Toast.LENGTH_LONG).show();
         }
         else {
+            stopSounds();
             Intent intent = new Intent(this, chordprogressionbuilder2.class);
             intent.putExtra("key", key);
             intent.putExtra("notes", notes);
+            soundPool.release();
             startActivity(intent);
         }
     }
@@ -117,6 +133,7 @@ public class MainActivity extends AppCompatActivity {
         for(int i = 0; i < 8; i++){
             if(chordButtons[i].getId() == v.getId()){
                 if(loaded && (chordButtons[i].getText()).length() > 0) {
+                    stopSounds();
                     playChord(chordButtons[i]);
                     openInfoBox(chordButtons[i]);
                 }
@@ -124,6 +141,12 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    //This method stops all of the sounds going on, to prevent chords from bleeding over each other
+    public void stopSounds(){
+        for(int i  = 0 ; i < 34; i++){
+            soundPool.stop(i);
+        }
+    }
     //This method plays the triad of the button that was touched
     public void playChord(Button rootButton) {
         String rootNote = (String)rootButton.getText();
@@ -137,9 +160,10 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    //This method takes the rootNote of the button and creates a 3 note triad based on the key that the user selected
     public void makeTriad(String rootNote) {
         int startIndex = 0;
-        for(int i = 0; i < notes.length; i++){
+        for(int i = 0; i < notes.length/2; i++){
             if(notes[i].equals(rootNote))
                 startIndex = i;
         }
@@ -151,13 +175,13 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    //This is the master method for printing the info about the chord that was clicked onto the screen
     public void openInfoBox(Button chord){
         displayChordQuality(chord);
         displayNotes(chord);
-
-
     }
 
+    //This method displays the notes of the chord selected
     public void displayNotes(Button chord) {
         makeTriad(getUnsimplifiedNote((String)chord.getText()));
         triadNotesTextView.setText("");
@@ -165,9 +189,9 @@ public class MainActivity extends AppCompatActivity {
             triadNotesTextView.append(getSimplifiedNote(triad[i]) + "-");
         }
         triadNotesTextView.append(getSimplifiedNote(triad[triad.length-1]));
-
     }
 
+    //This method takes the chord and based on its position in the key, displays its quality(Major, minor, diminished)
     public void displayChordQuality(Button chord) {
         String rootNote = (String)chord.getText();
         chordQualityTextView.setText(rootNote + " ");
@@ -230,6 +254,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    //Initializes the 2d array of notes for easier creation of keys
     public void initializeNotes(){
         for(int c = 0; c < sharpNotes.length; c++){
             NOTES[0][c] = sharpNotes[c] + "4";
